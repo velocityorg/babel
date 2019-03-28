@@ -10,11 +10,11 @@ SOURCES = packages codemods
 .PHONY: build build-dist watch lint fix clean test-clean test-only test test-ci publish bootstrap
 
 build: clean clean-lib
-	./node_modules/.bin/gulp build
+	./"node_modules/.bin/gulp" build
 	node ./packages/babel-standalone/scripts/generate.js
 	node ./packages/babel-types/scripts/generateTypeHelpers.js
 	# call build again as the generated files might need to be compiled again.
-	./node_modules/.bin/gulp build
+	./"node_modules/.bin/gulp" build
 	# generate flow and typescript typings
 	node packages/babel-types/scripts/generators/flow.js > ./packages/babel-types/lib/index.js.flow
 	node packages/babel-types/scripts/generators/typescript.js > ./packages/babel-types/lib/index.d.ts
@@ -24,16 +24,16 @@ ifneq ("$(BABEL_COVERAGE)", "true")
 endif
 
 build-standalone:
-	./node_modules/.bin/gulp build-babel-standalone
+	./"node_modules/.bin/gulp" build-babel-standalone
 
 build-preset-env-standalone:
-	./node_modules/.bin/gulp build-babel-preset-env-standalone
+	./"node_modules/.bin/gulp" build-babel-preset-env-standalone
 
 prepublish-build-standalone:
-	BABEL_ENV=production IS_PUBLISH=true ./node_modules/.bin/gulp build-babel-standalone
+	BABEL_ENV=production IS_PUBLISH=true ./"node_modules/.bin/gulp" build-babel-standalone
 
 prepublish-build-preset-env-standalone:
-	BABEL_ENV=production IS_PUBLISH=true ./node_modules/.bin/gulp build-babel-preset-env-standalone
+	BABEL_ENV=production IS_PUBLISH=true ./"node_modules/.bin/gulp" build-babel-preset-env-standalone
 
 build-dist: build
 	cd packages/babel-polyfill; \
@@ -52,16 +52,16 @@ watch: clean clean-lib
 	BABEL_ENV=development ./node_modules/.bin/gulp watch
 
 flow:
-	./node_modules/.bin/flow check --strip-root
+	./"node_modules/.bin/flow" check --strip-root
 
 lint:
-	./node_modules/.bin/eslint scripts $(SOURCES) '*.js' --format=codeframe
+	./"node_modules/.bin/eslint" scripts $(SOURCES) '*.js' --format=codeframe
 
 fix: fix-json
-	./node_modules/.bin/eslint scripts $(SOURCES) '*.js' --format=codeframe --fix
+	./"node_modules/.bin/eslint" scripts $(SOURCES) '*.js' --format=codeframe --fix
 
 fix-json:
-	./node_modules/.bin/prettier "{packages,codemod}/*/test/fixtures/**/options.json" --write --loglevel warn
+	./"node_modules/.bin/prettier" "{packages,codemod}/*/test/fixtures/**/options.json" --write --loglevel warn
 
 clean: test-clean
 	rm -f .npmrc
@@ -134,11 +134,11 @@ prepublish:
 
 new-version:
 	git pull --rebase
-	./node_modules/.bin/lerna version --force-publish="@babel/runtime,@babel/runtime-corejs2,@babel/standalone,@babel/preset-env-standalone"
+	./"node_modules/.bin/lerna" version --force-publish="@babel/runtime,@babel/runtime-corejs2,@babel/standalone,@babel/preset-env-standalone"
 
 # NOTE: Run make new-version first
 publish: prepublish
-	./node_modules/.bin/lerna publish from-git --require-scripts
+	./"node_modules/.bin/lerna" publish from-git --require-scripts
 	make clean
 
 publish-ci: prepublish
@@ -154,7 +154,7 @@ endif
 
 bootstrap-only: clean-all
 	yarn --ignore-engines
-	./node_modules/.bin/lerna bootstrap -- --ignore-engines
+	./"node_modules/.bin/lerna" bootstrap -- --ignore-engines
 
 bootstrap: bootstrap-only
 	make build
