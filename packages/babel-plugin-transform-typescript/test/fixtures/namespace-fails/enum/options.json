@@ -1,0 +1,3 @@
+{
+  "throws": "An enum may not share the name of its parent namespace."
+}
