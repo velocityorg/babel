@@ -9,7 +9,7 @@ const SHARED_NAMESPACE_ERRORS = {
     "A namespace may not share the name of its parent namespace.",
 };
 
-export default function transpileEnum(path, t) {
+export default function transpileNamespace(path, t) {
   if (path.node.declare || path.node.id.type === "StringLiteral") {
     path.remove();
     return;
