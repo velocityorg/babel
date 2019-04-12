@@ -41,6 +41,10 @@ function getDeclaration(t, name) {
   ]);
 }
 
+function getMemberExpression(t, name, itemName) {
+  return t.memberExpression(t.identifier(name), t.identifier(itemName));
+}
+
 function handleNested(path, t, node, parentExportName) {
   const names = [];
   const name = node.id.name;
@@ -117,7 +121,7 @@ function handleNested(path, t, node, parentExportName) {
           t.expressionStatement(
             t.assignmentExpression(
               "=",
-              t.memberExpression(t.identifier(name), t.identifier(itemName)),
+              getMemberExpression(t, name, itemName),
               t.identifier(itemName),
             ),
           ),
@@ -141,7 +145,7 @@ function handleNested(path, t, node, parentExportName) {
           }
           variable.init = t.assignmentExpression(
             "=",
-            t.memberExpression(t.identifier(name), t.identifier(variableName)),
+            getMemberExpression(t, name, variableName),
             variable.init,
           );
         }
@@ -191,10 +195,7 @@ function handleNested(path, t, node, parentExportName) {
         parentExportName
           ? t.assignmentExpression(
               "=",
-              t.memberExpression(
-                t.identifier(parentExportName),
-                t.identifier(name),
-              ),
+              getMemberExpression(t, parentExportName, name),
               derivedParameter,
             )
           : derivedParameter,
