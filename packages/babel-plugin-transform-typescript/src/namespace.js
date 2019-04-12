@@ -17,11 +17,16 @@ export default function transpileNamespace(path, t) {
 
   const name = path.node.id.name;
   const value = handleNested(path, t, JSON.parse(JSON.stringify(path.node)));
+  const bound = path.scope.hasOwnBinding(name);
   if (path.parent.type === "ExportNamedDeclaration") {
-    path.parentPath.insertAfter(value);
-    path.replaceWith(getDeclaration(t, name));
-    path.scope.registerDeclaration(path.parentPath);
-  } else if (path.scope.hasOwnBinding(name)) {
+    if (!bound) {
+      path.parentPath.insertAfter(value);
+      path.replaceWith(getDeclaration(t, name));
+      path.scope.registerDeclaration(path.parentPath);
+    } else {
+      path.parentPath.replaceWith(value);
+    }
+  } else if (bound) {
     path.replaceWith(value);
   } else {
     path.scope.registerDeclaration(
