@@ -16,7 +16,7 @@ export default function transpileNamespace(path, t) {
   }
 
   const name = path.node.id.name;
-  const value = handleNested(path, t, JSON.parse(JSON.stringify(path.node)));
+  const value = handleNested(path, t, t.cloneDeep(path.node));
   const bound = path.scope.hasOwnBinding(name);
   if (path.parent.type === "ExportNamedDeclaration") {
     if (!bound) {
