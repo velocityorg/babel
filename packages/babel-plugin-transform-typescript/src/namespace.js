@@ -51,6 +51,9 @@ function handleNested(path, t, node, parentExportName) {
   const namespaceTopLevel = node.body.body;
   for (let i = 0; i < namespaceTopLevel.length; i++) {
     const subNode = namespaceTopLevel[i];
+
+    // The first switch is mainly to detect name usage. Only export
+    // declarations require further transformation.
     switch (subNode.type) {
       case "TSModuleDeclaration": {
         const moduleName = subNode.id.name;
@@ -99,9 +102,13 @@ function handleNested(path, t, node, parentExportName) {
         }
         continue;
       default:
+        // Neither named declaration nor export, continue to next item.
         continue;
       case "ExportNamedDeclaration":
+      // Export declarations get parsed using the next switch.
     }
+
+    // Transform the export declarations that occur inside of a namespace.
     switch (subNode.declaration.type) {
       case "TSEnumDeclaration":
       case "FunctionDeclaration":
