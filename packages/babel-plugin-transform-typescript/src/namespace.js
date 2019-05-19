@@ -1,14 +1,3 @@
-const SHARED_NAMESPACE_ERRORS = {
-  TSEnumDeclaration: "An enum may not share the name of its parent namespace.",
-  FunctionDeclaration:
-    "A function may not share the name of its parent namespace.",
-  ClassDeclaration: "A class may not share the name of its parent namespace.",
-  VariableDeclaration:
-    "A variable may not share the name of its parent namespace.",
-  TSModuleDeclaration:
-    "A namespace may not share the name of its parent namespace.",
-};
-
 export default function transpileNamespace(path, t) {
   if (path.node.declare || path.node.id.type === "StringLiteral") {
     path.remove();
@@ -47,7 +36,8 @@ function getMemberExpression(t, name, itemName) {
 
 function handleNested(path, t, node, parentExportName) {
   const names = [];
-  const name = node.id.name;
+  const realName = node.id.name;
+  const name = path.scope.generateUid(realName);
   const namespaceTopLevel = node.body.body;
   for (let i = 0; i < namespaceTopLevel.length; i++) {
     const subNode = namespaceTopLevel[i];
@@ -56,49 +46,29 @@ function handleNested(path, t, node, parentExportName) {
     // declarations require further transformation.
     switch (subNode.type) {
       case "TSModuleDeclaration": {
+        const transformed = handleNested(path, t, subNode);
         const moduleName = subNode.id.name;
-        if (moduleName === name) {
-          throw path.hub.file.buildCodeFrameError(
-            subNode,
-            SHARED_NAMESPACE_ERRORS.TSModuleDeclaration,
-          );
-        }
         if (names[moduleName]) {
-          namespaceTopLevel[i] = handleNested(path, t, subNode);
+          namespaceTopLevel[i] = transformed;
         } else {
           names[moduleName] = true;
           namespaceTopLevel.splice(
             i++,
             1,
             getDeclaration(t, moduleName),
-            handleNested(path, t, subNode),
+            transformed,
           );
         }
         continue;
       }
       case "TSEnumDeclaration":
       case "FunctionDeclaration":
-      case "ClassDeclaration": {
-        const itemName = subNode.id.name;
-        if (itemName === name) {
-          throw path.hub.file.buildCodeFrameError(
-            subNode,
-            SHARED_NAMESPACE_ERRORS[subNode.type],
-          );
-        }
-        names[itemName] = true;
+      case "ClassDeclaration":
+        names[subNode.id.name] = true;
         continue;
-      }
       case "VariableDeclaration":
         for (const variable of subNode.declarations) {
-          const variableName = variable.id.name;
-          if (variableName === name) {
-            throw path.hub.file.buildCodeFrameError(
-              variable,
-              SHARED_NAMESPACE_ERRORS.VariableDeclaration,
-            );
-          }
-          names[variableName] = true;
+          names[variable.id.name] = true;
         }
         continue;
       default:
@@ -114,12 +84,6 @@ function handleNested(path, t, node, parentExportName) {
       case "FunctionDeclaration":
       case "ClassDeclaration": {
         const itemName = subNode.declaration.id.name;
-        if (itemName === name) {
-          throw path.hub.file.buildCodeFrameError(
-            subNode.declaration,
-            SHARED_NAMESPACE_ERRORS[subNode.declaration.type],
-          );
-        }
         names[itemName] = true;
         namespaceTopLevel.splice(
           i++,
@@ -143,54 +107,63 @@ function handleNested(path, t, node, parentExportName) {
           );
         }
         for (const variable of subNode.declaration.declarations) {
-          const variableName = variable.id.name;
-          if (variableName === name) {
-            throw path.hub.file.buildCodeFrameError(
-              variable,
-              SHARED_NAMESPACE_ERRORS.VariableDeclaration,
-            );
-          }
           variable.init = t.assignmentExpression(
             "=",
-            getMemberExpression(t, name, variableName),
+            getMemberExpression(t, name, variable.id.name),
             variable.init,
           );
         }
         namespaceTopLevel[i] = subNode.declaration;
         break;
       case "TSModuleDeclaration": {
+        const transformed = handleNested(path, t, subNode.declaration, name);
         const moduleName = subNode.declaration.id.name;
-        if (moduleName === name) {
-          throw path.hub.file.buildCodeFrameError(
-            subNode.declaration,
-            SHARED_NAMESPACE_ERRORS.TSModuleDeclaration,
-          );
-        }
         if (names[moduleName]) {
-          namespaceTopLevel[i] = handleNested(
-            path,
-            t,
-            subNode.declaration,
-            name,
-          );
+          namespaceTopLevel[i] = transformed;
         } else {
           names[moduleName] = true;
           namespaceTopLevel.splice(
             i++,
             1,
             getDeclaration(t, moduleName),
-            handleNested(path, t, subNode.declaration, name),
+            transformed,
           );
         }
       }
     }
   }
 
-  const derivedParameter = t.logicalExpression(
-    "||",
-    t.identifier(name),
-    t.assignmentExpression("=", t.identifier(name), t.objectExpression([])),
+  // {}
+  let fallthroughValue = t.objectExpression([]);
+
+  if (parentExportName) {
+    // _A.B = {}
+    const exportAssignment = t.assignmentExpression(
+      "=",
+      getMemberExpression(t, parentExportName, realName),
+      fallthroughValue,
+    );
+    // _A.B || (_A.B = {})
+    fallthroughValue = t.logicalExpression(
+      "||",
+      getMemberExpression(t, parentExportName, realName),
+      exportAssignment,
+    );
+  }
+
+  // B = ...
+  const assignment = t.assignmentExpression(
+    "=",
+    t.identifier(realName),
+    fallthroughValue,
   );
+  // B || (B = ...)
+  const parameter = t.logicalExpression(
+    "||",
+    t.identifier(realName),
+    assignment,
+  );
+
   return t.expressionStatement(
     t.callExpression(
       t.functionExpression(
@@ -198,15 +171,7 @@ function handleNested(path, t, node, parentExportName) {
         [t.identifier(name)],
         t.blockStatement(namespaceTopLevel),
       ),
-      [
-        parentExportName
-          ? t.assignmentExpression(
-              "=",
-              getMemberExpression(t, parentExportName, name),
-              derivedParameter,
-            )
-          : derivedParameter,
-      ],
+      [parameter],
     ),
   );
 }

@@ -1,5 +1,5 @@
 export class N {}
 
-(function (N) {})(N || (N = {}));
+(function (_N) {})(N || (N = {}));
 
 export default N;

@@ -1,6 +1,6 @@
 let Validation;
 
-(function (Validation) {
+(function (_Validation) {
   const lettersRegexp = /^[A-Za-z]+$/;
   const numberRegexp = /^[0-9]+$/;
 
@@ -15,7 +15,7 @@ let Validation;
 
   }
 
-  Validation.LettersOnlyValidator = LettersOnlyValidator;
+  _Validation.LettersOnlyValidator = LettersOnlyValidator;
 
   class ZipCodeValidator {
     isAcceptable(s) {
@@ -24,7 +24,7 @@ let Validation;
 
   }
 
-  Validation.ZipCodeValidator = ZipCodeValidator;
+  _Validation.ZipCodeValidator = ZipCodeValidator;
 })(Validation || (Validation = {}));
 
 let strings = ["Hello", "98052", "101"];

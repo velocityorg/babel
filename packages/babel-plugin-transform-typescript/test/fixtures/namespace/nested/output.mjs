@@ -1,18 +1,26 @@
 class A {}
 
-(function (A) {
+(function (_A) {
   let C;
 
-  (function (C) {
+  (function (_C) {
     class G {}
 
-    C.G = G;
-    const E = C.E = 7;
-  })(A.C = C || (C = {}));
+    _C.G = G;
+    const E = _C.E = 7;
+  })(C || (C = _A.C || (_A.C = {})));
+
+  function M() {}
+
+  (function (_M) {
+    const N = _M.N = C.E;
+  })(M || (M = {}));
 
   function D() {}
 
-  (function (D) {
+  _A.D = D;
+
+  (function (_D) {
     const C = 5;
     let H;
 
@@ -22,16 +30,16 @@ class A {}
       H[H["K"] = 17] = "K";
     })(H || (H = {}));
 
-    D.H = H;
-  })(A.D = D || (D = {}));
+    _D.H = H;
+  })(D || (D = _A.D || (_A.D = {})));
 
   class F {}
 
-  (function (F) {})(F || (F = {}));
+  (function (_F) {})(F || (F = {}));
 
   let G;
 
-  (function (G) {})(G || (G = {}));
+  (function (_G) {})(G || (G = {}));
 
   let L;
 

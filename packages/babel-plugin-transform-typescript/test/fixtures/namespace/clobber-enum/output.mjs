@@ -4,6 +4,6 @@ var A;
   A[A["C"] = 2] = "C";
 })(A || (A = {}));
 
-(function (A) {
-  const B = A.B = 1;
+(function (_A) {
+  const B = _A.B = 1;
 })(A || (A = {}));

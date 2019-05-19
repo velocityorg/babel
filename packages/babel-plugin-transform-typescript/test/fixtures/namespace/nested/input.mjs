@@ -4,7 +4,11 @@ namespace A {
     export class G {}
     export const E = 7;
   }
-  function D() {}
+  function M() {}
+  namespace M {
+    export const N = C.E;
+  }
+  export function D() {}
   export namespace D {
     const C = 5;
     export enum H {
