@@ -1,9 +1,19 @@
 import { template } from "@babel/core";
 
-export default function transpileNamespace(path, t) {
+export default function transpileNamespace(path, t, allowNamespaces) {
   if (path.node.declare || path.node.id.type === "StringLiteral") {
     path.remove();
     return;
+  }
+
+  if (!allowNamespaces) {
+    throw path.hub.file.buildCodeFrameError(
+      path.node.id,
+      "Namespace not marked type-only declare." +
+        " Non-declarative namespaces are only supported experimentally in Babel." +
+        " To enable and review caveats see:" +
+        " https://babeljs.io/docs/en/babel-plugin-transform-typescript",
+    );
   }
 
   const name = path.node.id.name;
