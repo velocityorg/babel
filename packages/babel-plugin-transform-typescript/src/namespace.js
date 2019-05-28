@@ -1,3 +1,5 @@
+import { template } from "@babel/core";
+
 export default function transpileNamespace(path, t) {
   if (path.node.declare || path.node.id.type === "StringLiteral") {
     path.remove();
@@ -34,10 +36,10 @@ function getMemberExpression(t, name, itemName) {
   return t.memberExpression(t.identifier(name), t.identifier(itemName));
 }
 
-function handleNested(path, t, node, parentExportName) {
+function handleNested(path, t, node, parentExport) {
   const names = [];
-  const realName = node.id.name;
-  const name = path.scope.generateUid(realName);
+  const realName = node.id;
+  const name = path.scope.generateUid(realName.name);
   const namespaceTopLevel = node.body.body;
   for (let i = 0; i < namespaceTopLevel.length; i++) {
     const subNode = namespaceTopLevel[i];
@@ -116,7 +118,12 @@ function handleNested(path, t, node, parentExportName) {
         namespaceTopLevel[i] = subNode.declaration;
         break;
       case "TSModuleDeclaration": {
-        const transformed = handleNested(path, t, subNode.declaration, name);
+        const transformed = handleNested(
+          path,
+          t,
+          subNode.declaration,
+          t.identifier(name),
+        );
         const moduleName = subNode.declaration.id.name;
         if (names[moduleName]) {
           namespaceTopLevel[i] = transformed;
@@ -136,42 +143,17 @@ function handleNested(path, t, node, parentExportName) {
   // {}
   let fallthroughValue = t.objectExpression([]);
 
-  if (parentExportName) {
-    // _A.B = {}
-    const exportAssignment = t.assignmentExpression(
-      "=",
-      getMemberExpression(t, parentExportName, realName),
-      fallthroughValue,
-    );
-    // _A.B || (_A.B = {})
-    fallthroughValue = t.logicalExpression(
-      "||",
-      getMemberExpression(t, parentExportName, realName),
-      exportAssignment,
-    );
+  if (parentExport) {
+    fallthroughValue = template.expression.ast`
+      ${parentExport}.${realName} || (
+        ${parentExport}.${realName} = ${fallthroughValue}
+      )
+    `;
   }
 
-  // B = ...
-  const assignment = t.assignmentExpression(
-    "=",
-    t.identifier(realName),
-    fallthroughValue,
-  );
-  // B || (B = ...)
-  const parameter = t.logicalExpression(
-    "||",
-    t.identifier(realName),
-    assignment,
-  );
-
-  return t.expressionStatement(
-    t.callExpression(
-      t.functionExpression(
-        null,
-        [t.identifier(name)],
-        t.blockStatement(namespaceTopLevel),
-      ),
-      [parameter],
-    ),
-  );
+  return template.statement.ast`
+    (function (${t.identifier(name)}) {
+      ${namespaceTopLevel}
+    })(${realName} || (${realName} = ${fallthroughValue}));
+  `;
 }
