@@ -47,7 +47,7 @@ function getMemberExpression(t, name, itemName) {
 }
 
 function handleNested(path, t, node, parentExport) {
-  const names = [];
+  const names = new Set();
   const realName = node.id;
   const name = path.scope.generateUid(realName.name);
   const namespaceTopLevel = node.body.body;
@@ -60,10 +60,10 @@ function handleNested(path, t, node, parentExport) {
       case "TSModuleDeclaration": {
         const transformed = handleNested(path, t, subNode);
         const moduleName = subNode.id.name;
-        if (names[moduleName]) {
+        if (names.has(moduleName)) {
           namespaceTopLevel[i] = transformed;
         } else {
-          names[moduleName] = true;
+          names.add(moduleName);
           namespaceTopLevel.splice(
             i++,
             1,
@@ -76,11 +76,11 @@ function handleNested(path, t, node, parentExport) {
       case "TSEnumDeclaration":
       case "FunctionDeclaration":
       case "ClassDeclaration":
-        names[subNode.id.name] = true;
+        names.add(subNode.id.name);
         continue;
       case "VariableDeclaration":
         for (const variable of subNode.declarations) {
-          names[variable.id.name] = true;
+          names.add(variable.id.name);
         }
         continue;
       default:
@@ -96,7 +96,7 @@ function handleNested(path, t, node, parentExport) {
       case "FunctionDeclaration":
       case "ClassDeclaration": {
         const itemName = subNode.declaration.id.name;
-        names[itemName] = true;
+        names.add(itemName);
         namespaceTopLevel.splice(
           i++,
           1,
@@ -137,10 +137,10 @@ function handleNested(path, t, node, parentExport) {
           t.identifier(name),
         );
         const moduleName = subNode.declaration.id.name;
-        if (names[moduleName]) {
+        if (names.has(moduleName)) {
           namespaceTopLevel[i] = transformed;
         } else {
-          names[moduleName] = true;
+          names.add(moduleName);
           namespaceTopLevel.splice(
             i++,
             1,
