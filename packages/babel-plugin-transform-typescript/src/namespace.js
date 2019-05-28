@@ -105,7 +105,9 @@ function handleNested(path, t, node, parentExport) {
         if (subNode.declaration.kind !== "const") {
           throw path.hub.file.buildCodeFrameError(
             subNode.declaration,
-            "Namespaces exporting non-const are unsupported.",
+            "Namespaces exporting non-const are not supported by Babel." +
+              " Change to const or see:" +
+              " https://babeljs.io/docs/en/babel-plugin-transform-typescript",
           );
         }
         for (const variable of subNode.declaration.declarations) {
